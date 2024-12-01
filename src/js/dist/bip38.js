@@ -1,12 +1,8 @@
 "use strict";
-var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
-    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
-        if (ar || !(i in from)) {
-            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
-            ar[i] = from[i];
-        }
-    }
-    return to.concat(ar || Array.prototype.slice.call(from));
+var __spreadArray = (this && this.__spreadArray) || function (to, from) {
+    for (var i = 0, il = from.length, j = to.length; i < il; i++, j++)
+        to[j] = from[i];
+    return to;
 };
 function INIT_BIP38() {
     function GenerateRandomBIP38EncryptionData(password, addressType) {
@@ -52,16 +48,16 @@ function INIT_BIP38() {
             }
         })();
         var addressHash = CryptoHelper.SHA256(CryptoHelper.SHA256(generatedAddress)).slice(0, 4);
-        var salt = __spreadArray(__spreadArray([], addressHash, true), encryptionData.ownersalt, true);
+        var salt = __spreadArray(__spreadArray([], addressHash), encryptionData.ownersalt);
         var encrypted = CryptoHelper.scrypt(encryptionData.passpoint, salt, 10, 1, 1, 64);
         var derivedHalf1 = encrypted.slice(0, 32);
         var derivedHalf2 = encrypted.slice(32, 64);
         var encryptedpart1 = CryptoHelper.AES_Encrypt_ECB_NoPadding(WorkerUtils.ByteArrayXOR(seedb.slice(0, 16), derivedHalf1.slice(0, 16)), derivedHalf2);
-        var block2 = __spreadArray(__spreadArray([], encryptedpart1.slice(8, 16), true), seedb.slice(16, 24), true);
+        var block2 = __spreadArray(__spreadArray([], encryptedpart1.slice(8, 16)), seedb.slice(16, 24));
         var encryptedpart2 = CryptoHelper.AES_Encrypt_ECB_NoPadding(WorkerUtils.ByteArrayXOR(block2, derivedHalf1.slice(16, 32)), derivedHalf2);
         var finalPrivateKeyWithoutChecksum = __spreadArray(__spreadArray(__spreadArray(__spreadArray([
             0x01, 0x43, 0x20
-        ], addressHash, true), encryptionData.ownersalt, true), encryptedpart1.slice(0, 8), true), encryptedpart2, true);
+        ], addressHash), encryptionData.ownersalt), encryptedpart1.slice(0, 8)), encryptedpart2);
         return {
             addressType: encryptionData.addressType,
             address: addressWithType,
@@ -105,9 +101,9 @@ function INIT_BIP38() {
             var derivedHalf1 = scryptResult2.slice(0, 32);
             var derivedHalf2 = scryptResult2.slice(32, 64);
             var decrypted2 = CryptoHelper.AES_Decrypt_ECB_NoPadding(encryptedPart2, derivedHalf2);
-            var encryptedpart1 = __spreadArray(__spreadArray([], bytes.slice(14, 22), true), WorkerUtils.ByteArrayXOR(decrypted2.slice(0, 8), scryptResult2.slice(16, 24)), true);
+            var encryptedpart1 = __spreadArray(__spreadArray([], bytes.slice(14, 22)), WorkerUtils.ByteArrayXOR(decrypted2.slice(0, 8), scryptResult2.slice(16, 24)));
             var decrypted1 = CryptoHelper.AES_Decrypt_ECB_NoPadding(encryptedpart1, derivedHalf2);
-            var seedb = __spreadArray(__spreadArray([], WorkerUtils.ByteArrayXOR(decrypted1.slice(0, 16), derivedHalf1.slice(0, 16)), true), WorkerUtils.ByteArrayXOR(decrypted2.slice(8, 16), derivedHalf1.slice(24, 32)), true);
+            var seedb = __spreadArray(__spreadArray([], WorkerUtils.ByteArrayXOR(decrypted1.slice(0, 16), derivedHalf1.slice(0, 16))), WorkerUtils.ByteArrayXOR(decrypted2.slice(8, 16), derivedHalf1.slice(24, 32)));
             var factorb = CryptoHelper.SHA256(CryptoHelper.SHA256(seedb));
             var finalPrivateKeyValue = WorkerUtils.ByteArrayToBigint(scryptResult)
                 .mul(WorkerUtils.ByteArrayToBigint(factorb))
@@ -171,7 +167,7 @@ function INIT_BIP38() {
         var secondHalf = derivedBytes.slice(32);
         var finalPrivateKeyWithoutChecksum = __spreadArray(__spreadArray([
             0x01, 0x42, 0xe0
-        ], salt, true), CryptoHelper.AES_Encrypt_ECB_NoPadding(firstHalf, secondHalf), true);
+        ], salt), CryptoHelper.AES_Encrypt_ECB_NoPadding(firstHalf, secondHalf));
         return {
             type: "ok",
             result: WorkerUtils.Base58CheckEncode(finalPrivateKeyWithoutChecksum)

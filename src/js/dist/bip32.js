@@ -1,12 +1,8 @@
 "use strict";
-var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
-    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
-        if (ar || !(i in from)) {
-            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
-            ar[i] = from[i];
-        }
-    }
-    return to.concat(ar || Array.prototype.slice.call(from));
+var __spreadArray = (this && this.__spreadArray) || function (to, from) {
+    for (var i = 0, il = from.length, j = to.length; i < il; i++, j++)
+        to[j] = from[i];
+    return to;
 };
 function INIT_BIP32() {
     var bn_0 = new BN(0);
@@ -18,7 +14,7 @@ function INIT_BIP32() {
         return ((bytes[0] << 24) | (bytes[1] << 16) | (bytes[2] << 8) | bytes[3]) >>> 0;
     }
     function SerializeECCKeypairCompressed(keypair) {
-        return __spreadArray([0x2 + keypair.y.and(bn_1).toNumber()], WorkerUtils.BigintToByteArrayLittleEndian32(keypair.x), true);
+        return __spreadArray([0x2 + keypair.y.and(bn_1).toNumber()], WorkerUtils.BigintToByteArrayLittleEndian32(keypair.x));
     }
     function ModPow(num, exponent, mod) {
         var ret = bn_1;
@@ -37,8 +33,8 @@ function INIT_BIP32() {
         var parentKeyBigint = WorkerUtils.ByteArrayToBigint(parentKey);
         var parentChainCode = parent.chainCode;
         var I = isHardened
-            ? CryptoHelper.HmacSHA512(__spreadArray(__spreadArray([0x00], parentKey, true), Uint32ToBytes(index), true), parentChainCode)
-            : CryptoHelper.HmacSHA512(__spreadArray(__spreadArray([], SerializeECCKeypairCompressed(EllipticCurve.GetECCKeypair(parentKeyBigint)), true), Uint32ToBytes(index), true), parentChainCode);
+            ? CryptoHelper.HmacSHA512(__spreadArray(__spreadArray([0x00], parentKey), Uint32ToBytes(index)), parentChainCode)
+            : CryptoHelper.HmacSHA512(__spreadArray(__spreadArray([], SerializeECCKeypairCompressed(EllipticCurve.GetECCKeypair(parentKeyBigint))), Uint32ToBytes(index)), parentChainCode);
         var IL = I.slice(0, 32);
         var IR = I.slice(32, 64);
         var parsed256IL = WorkerUtils.ByteArrayToBigint(IL);
@@ -70,7 +66,7 @@ function INIT_BIP32() {
         }
         var parentKeyPairBigint = { x: pointX, y: pointY };
         var parentChainCode = parent.chainCode;
-        var I = CryptoHelper.HmacSHA512(__spreadArray(__spreadArray([], SerializeECCKeypairCompressed(parentKeyPairBigint), true), Uint32ToBytes(index), true), parentChainCode);
+        var I = CryptoHelper.HmacSHA512(__spreadArray(__spreadArray([], SerializeECCKeypairCompressed(parentKeyPairBigint)), Uint32ToBytes(index)), parentChainCode);
         var IL = I.slice(0, 32);
         var IR = I.slice(32, 64);
         var tempBigint = WorkerUtils.ByteArrayToBigint(IL);
@@ -131,7 +127,7 @@ function INIT_BIP32() {
         if (depth > 255) {
             return { type: "err", error: "Depth must be 255 at most" };
         }
-        var finalResult = __spreadArray(__spreadArray(__spreadArray(__spreadArray(__spreadArray(__spreadArray([], versionBytes, true), [depth], false), parentKeyFingerprint, true), Uint32ToBytes(childIndex), true), chainCode, true), keyData, true);
+        var finalResult = __spreadArray(__spreadArray(__spreadArray(__spreadArray(__spreadArray(__spreadArray([], versionBytes), [depth]), parentKeyFingerprint), Uint32ToBytes(childIndex)), chainCode), keyData);
         return {
             type: "ok",
             result: WorkerUtils.Base58CheckEncode(finalResult)
@@ -215,7 +211,7 @@ function INIT_BIP32() {
                 if (fromPrivate) {
                     var privateKey = keyData.slice(1);
                     var derivedKey = CKD_Priv({ key: privateKey, chainCode: chainCode }, childIndex);
-                    keyData = __spreadArray([0x00], WorkerUtils.BigintToByteArrayLittleEndian32(derivedKey.key), true);
+                    keyData = __spreadArray([0x00], WorkerUtils.BigintToByteArrayLittleEndian32(derivedKey.key));
                     return {
                         type: "ok",
                         result: derivedKey.chainCode
@@ -272,10 +268,17 @@ function INIT_BIP32() {
         })();
         return SerializeExtendedKey(toPrivate, currentDepth, fingerprint, lastIndex, chainCode, keyData, type);
     }
-    function DeriveBIP32ExtendedKey(rootKey, path, derivedKeyPurpose, hardened) {
-        var originalPath = path;
+    function DeriveBIP32ExtendedKey(rootKey, path, derivedKeyPurpose, hardened, changeAddresses) {
         var isPrivate = rootKey.substr(1, 3) === "prv";
-        if (derivedKeyPurpose === "32") {
+        if (derivedKeyPurpose !== "32") {
+            if (isPrivate) {
+                path += (changeAddresses ? "/1" : "/0");
+            }
+            else {
+                path = "m";
+            }
+        }
+        else {
             if (rootKey[0] === "y") {
                 derivedKeyPurpose = "49";
             }

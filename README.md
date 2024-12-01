@@ -1,5 +1,5 @@
-# Bitcoin address generator
-Available at https://kimbatt.github.io/btc-address-generator/
+# Briskcoin address generator
+Available at https://briskcoin.org/paper-wallet/index.html
 
 ## Features:
 *  Create bech32, segwit (p2sh-p2wpkh), and legacy (p2pkh) addresses
